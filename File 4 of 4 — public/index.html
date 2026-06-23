@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JonnyPops NE Event Pipeline</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --jp-red:#E03B2F;--jp-red-light:#FCEBEB;--jp-red-dark:#A32D2D;
+  --bg:#F8F8F8;--surface:#fff;--border:#E5E5E5;--text:#1A1A1A;
+  --text-muted:#6B7280;--text-hint:#9CA3AF;--radius:10px;--radius-lg:14px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+.nav{background:var(--jp-red);padding:0 1.5rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:58px;position:sticky;top:0;z-index:50}
+.nav-logo{color:#fff;font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.nav-profiles{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;padding:8px 0}
+.profile-btn{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);color:#fff;border-radius:20px;padding:6px 16px;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap}
+.profile-btn:hover{background:rgba(255,255,255,0.28)}
+.profile-btn.active{background:#fff;color:var(--jp-red);font-weight:600;border-color:#fff}
+.hero{background:var(--jp-red);padding:2rem 1.5rem 3rem;color:#fff;text-align:center}
+.hero h1{font-size:28px;font-weight:600;margin-bottom:8px}
+.hero p{font-size:14px;opacity:.85;margin-bottom:1.5rem}
+.search-bar{display:flex;gap:8px;max-width:760px;margin:0 auto;flex-wrap:wrap}
+.search-bar select{flex:1;min-width:120px;padding:10px 14px;border-radius:var(--radius);border:none;font-size:14px;font-family:'Inter',sans-serif;background:#fff;color:#333;cursor:pointer}
+.filter-btn{padding:10px 22px;background:#fff;color:var(--jp-red);border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap}
+.filter-btn:hover{background:#f5f5f5}
+.tabs{background:#fff;border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;position:sticky;top:58px;z-index:40}
+.tab{padding:13px 20px;font-size:14px;font-weight:500;cursor:pointer;border-bottom:2.5px solid transparent;color:var(--text-muted);transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--jp-red);border-bottom-color:var(--jp-red)}
+.main{padding:1.5rem;max-width:1200px;margin:0 auto}
+.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
+.section-title{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+.section-title i{color:var(--jp-red)}
+.event-count{font-size:13px;color:var(--text-muted);background:var(--bg);padding:3px 10px;border-radius:20px;border:1px solid var(--border)}
+.ai-btn{padding:9px 18px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--text);font-family:'Inter',sans-serif;transition:all .15s}
+.ai-btn:hover{border-color:var(--jp-red);color:var(--jp-red)}
+.ai-btn:disabled{opacity:.5;cursor:default}
+.events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.season-divider{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin:12px 0 4px}
+.season-divider span{font-size:13px;font-weight:600;color:var(--text-muted);white-space:nowrap}
+.season-divider hr{flex:1;border:none;border-top:1px solid var(--border)}
+.event-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:all .18s}
+.event-card:hover{border-color:var(--jp-red);transform:translateY(-2px);box-shadow:0 4px 16px rgba(224,59,47,.12)}
+.event-card.blocked{opacity:.38;cursor:default;pointer-events:none}
+.event-card.warned{border-color:#F97316}
+.card-header{padding:14px 16px 10px;position:relative}
+.ch-spring{background:#F0FDF4}.ch-summer{background:var(--jp-red-light)}.ch-fall{background:#FFF7ED}.ch-winter{background:#EFF6FF}
+.card-season-type{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.season-pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:8px}
+.sp-spring{background:#D1FAE5;color:#065F46}
+.sp-summer{background:#FEE2E2;color:#991B1B}
+.sp-fall{background:#FFEDD5;color:#9A3412}
+.sp-winter{background:#DBEAFE;color:#1E40AF}
+.card-type-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px}
+.card-name{font-size:15px;font-weight:600;color:var(--text);line-height:1.35;padding-right:68px}
+.card-badge{position:absolute;top:12px;right:12px;font-size:11px;padding:3px 9px;border-radius:10px;font-weight:600}
+.b-open{background:#D1FAE5;color:#065F46}
+.b-warned{background:#FEF3C7;color:#92400E}
+.b-blocked{background:#F3F4F6;color:#6B7280}
+.card-body{padding:10px 16px 14px}
+.card-meta{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.meta-row{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-muted)}
+.meta-row i{font-size:14px;color:var(--jp-red);flex-shrink:0}
+.card-foot{display:flex;justify-content:space-between;align-items:flex-end}
+.att-num{font-size:20px;font-weight:700;color:var(--jp-red);line-height:1}
+.att-label{font-size:11px;color:var(--text-hint);margin-top:2px}
+.reach-btn{padding:8px 16px;background:var(--jp-red);color:#fff;border:none;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s}
+.reach-btn:hover{background:var(--jp-red-dark)}
+.ai-pill{display:inline-flex;align-items:center;gap:3px;font-size:10px;background:var(--jp-red-light);color:var(--jp-red-dark);padding:1px 7px;border-radius:8px;font-weight:600;margin-left:4px}
+.empty-state{grid-column:1/-1;text-align:center;padding:3rem 1rem;color:var(--text-muted);font-size:14px}
+.empty-state i{font-size:36px;display:block;margin-bottom:10px;opacity:.35;color:var(--jp-red)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius-lg);width:100%;max-width:580px;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.modal-head{background:var(--jp-red);padding:1.25rem 1.5rem;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.modal-head h2{color:#fff;font-size:18px;font-weight:600;line-height:1.3;flex:1}
+.modal-close{background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.modal-close:hover{background:rgba(255,255,255,.35)}
+.modal-body{padding:1.5rem}
+.modal-section{margin-bottom:1.5rem}
+.modal-label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.email-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;font-size:13px;line-height:1.75;color:var(--text);white-space:pre-wrap;font-family:'Inter',sans-serif;max-height:220px;overflow-y:auto}
+.copy-btn{margin-top:10px;padding:9px 18px;background:var(--jp-red);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:'Inter',sans-serif;transition:background .15s}
+.copy-btn:hover{background:var(--jp-red-dark)}
+.log-form{display:grid;gap:10px}
+.log-form input,.log-form select,.log-form textarea{width:100%;padding:9px 13px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:'Inter',sans-serif;color:var(--text);background:#fff;transition:border-color .15s}
+.log-form input:focus,.log-form select:focus,.log-form textarea:focus{outline:none;border-color:var(--jp-red)}
+.log-form textarea{resize:vertical;min-height:64px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.log-submit{padding:11px;background:var(--jp-red);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s}
+.log-submit:hover{background:var(--jp-red-dark)}
+.log-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-lg);background:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:680px}
+th{text-align:left;padding:10px 14px;background:var(--bg);color:var(--text-muted);font-weight:600;font-size:12px;border-bottom:1px solid var(--border)}
+td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFAFA}
+.status-sel{padding:4px 9px;border-radius:var(--radius);border:1px solid var(--border);font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;background:#fff;color:var(--text)}
+.del-btn{background:none;border:none;color:var(--text-hint);cursor:pointer;font-size:15px;padding:2px 5px;border-radius:6px;transition:all .15s}
+.del-btn:hover{color:var(--jp-red);background:var(--jp-red-light)}
+.log-empty{text-align:center;padding:3rem 1rem;color:var(--text-muted);font-size:14px}
+.log-empty i{font-size:32px;display:block;margin-bottom:8px;opacity:.3;color:var(--jp-red)}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1F2937;color:#fff;padding:11px 20px;border-radius:var(--radius);font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .22s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(224,59,47,.25);border-top-color:var(--jp-red);border-radius:50%;animation:spin .6s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){
+  .form-row{grid-template-columns:1fr}
+  .hero h1{font-size:22px}
+  .nav-profiles{gap:4px}
+  .profile-btn{padding:5px 10px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="nav">
+  <div class="nav-logo">🧊 JonnyPops NE Pipeline</div>
+  <div class="nav-profiles" id="profileNav"></div>
+</div>
+<div class="hero">
+  <h1>Find your next event 🍦</h1>
+  <p>Year-round event discovery across the Northeast — spring, summer, fall &amp; winter</p>
+  <div class="search-bar">
+    <select id="filterState">
+      <option value="">All states</option>
+      <option value="MA">Massachusetts</option>
+      <option value="CT">Connecticut</option>
+      <option value="NJ">New Jersey</option>
+      <option value="NY">New York</option>
+      <option value="RI">Rhode Island</option>
+      <option value="NH">New Hampshire</option>
+      <option value="VT">Vermont</option>
+      <option value="ME">Maine</option>
+    </select>
+    <select id="filterType">
+      <option value="">All types</option>
+      <option value="Festival">Festival</option>
+      <option value="Road Race">Road Race</option>
+      <option value="Corporate">Corporate</option>
+      <option value="School">School</option>
+      <option value="Farmers Market">Farmers Market</option>
+      <option value="Community">Community</option>
+      <option value="Sports">Sports</option>
+      <option value="Library">Library</option>
+      <option value="Food & Drink">Food &amp; Drink</option>
+      <option value="Block Party">Block Party</option>
+      <option value="Park Event">Park Event</option>
+      <option value="Holiday">Holiday</option>
+      <option value="Winter Market">Winter Market</option>
+    </select>
+    <select id="filterSeason">
+      <option value="">All seasons</option>
+      <option value="spring">🌸 Spring</option>
+      <option value="summer">☀️ Summer</option>
+      <option value="fall">🍂 Fall</option>
+      <option value="winter">❄️ Winter</option>
+    </select>
+    <button class="filter-btn" onclick="applyFilters()">Filter</button>
+  </div>
+</div>
+<div class="tabs">
+  <div class="tab active" id="tab-events" onclick="switchTab('events')">Events</div>
+  <div class="tab" id="tab-log" onclick="switchTab('log')">My outreach log</div>
+</div>
+<div class="main">
+  <div id="view-events">
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="section-title" id="eventsTitle"><i class="ti ti-calendar-event"></i> Upcoming events</div>
+        <span class="event-count" id="eventCount"></span>
+      </div>
+      <button class="ai-btn" id="aiBtn" onclick="fetchAIEvents()"><i class="ti ti-sparkles"></i> Find more with AI</button>
+    </div>
+    <div class="events-grid" id="eventsGrid"></div>
+  </div>
+  <div id="view-log" style="display:none">
+    <div class="top-bar">
+      <div class="section-title" id="logTitle"><i class="ti ti-list-check"></i> Outreach log</div>
+    </div>
+    <div class="log-wrap">
+      <table>
+        <thead><tr><th>Event</th><th>Date</th><th>Location</th><th>Contact</th><th>Status</th><th>Pops</th><th>Notes</th><th></th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+      <div id="logEmpty" class="log-empty" style="display:none">
+        <i class="ti ti-inbox"></i> No outreach logged yet. Click an event card to get started.
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="eventModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modalTitle"></h2>
+      <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-label">Ready-to-send outreach email</div>
+        <div class="email-box" id="emailDraft"></div>
+        <button class="copy-btn" onclick="copyEmail()"><i class="ti ti-copy"></i> Copy email</button>
+      </div>
+      <div class="modal-section">
+        <div class="modal-label">Log this outreach</div>
+        <div class="log-form">
+          <input type="text" id="f-name" placeholder="Event name"/>
+          <div class="form-row">
+            <input type="date" id="f-date"/>
+            <input type="text" id="f-location" placeholder="City, State"/>
+          </div>
+          <input type="text" id="f-contact" placeholder="Contact name & email"/>
+          <div class="form-row">
+            <select id="f-status">
+              <option value="Reached Out">Reached out</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Declined">Declined</option>
+            </select>
+            <input type="number" id="f-pops" placeholder="# of pops"/>
+          </div>
+          <textarea id="f-notes" placeholder="Notes..."></textarea>
+          <button class="log-submit" onclick="submitLog()">Save to my log</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const INTERNS=[
+  {id:'gabby',name:'Gabby',territory:'South Boston',states:['MA']},
+  {id:'shelby',name:'Shelby',territory:'North Boston',states:['MA']},
+  {id:'lauren',name:'Lauren',territory:'New Jersey',states:['NJ','NY']},
+  {id:'katie',name:'Katie',territory:'Connecticut',states:['CT','RI']},
+];
+const BASE_EVENTS=[
+  {id:'sp1',name:'Boston Flower & Garden Show',date:'2027-03-13',state:'MA',city:'Boston, MA',type:'Festival',attendance:50000},
+  {id:'sp2',name:'Stoughton Library Spring Story Hour',date:'2027-03-15',state:'MA',city:'Stoughton, MA',type:'Library',attendance:80},
+  {id:'sp3',name:'Providence St. Patrick\'s Day Parade',date:'2027-03-15',state:'RI',city:'Providence, RI',type:'Community',attendance:20000},
+  {id:'sp4',name:'Easton Earth Day Community Cleanup',date:'2027-04-19',state:'MA',city:'Easton, MA',type:'Community',attendance:300},
+  {id:'sp5',name:'Milford Spring Craft Fair',date:'2027-04-26',state:'CT',city:'Milford, CT',type:'Festival',attendance:1500},
+  {id:'sp6',name:'Montclair Spring Farmers Market Opening',date:'2027-04-05',state:'NJ',city:'Montclair, NJ',type:'Farmers Market',attendance:600},
+  {id:'sp7',name:'Tarrytown Kids Spring Fair',date:'2027-04-12',state:'NY',city:'Tarrytown, NY',type:'School',attendance:400},
+  {id:'sp8',name:'Concord NH Tulip Festival',date:'2027-05-03',state:'NH',city:'Concord, NH',type:'Festival',attendance:5000},
+  {id:'sp9',name:'Burlington VT Farmers Market Season Opener',date:'2027-05-10',state:'VT',city:'Burlington, VT',type:'Farmers Market',attendance:2000},
+  {id:'sp10',name:'Portland ME Spring Road Race 5K',date:'2027-05-17',state:'ME',city:'Portland, ME',type:'Road Race',attendance:800},
+  {id:'sp11',name:'Mansfield Little League Opening Day',date:'2027-04-05',state:'MA',city:'Mansfield, MA',type:'Sports',attendance:400},
+  {id:'sp12',name:'Canton Spring School Carnival',date:'2027-05-09',state:'MA',city:'Canton, MA',type:'School',attendance:600},
+  {id:'sp13',name:'Greenwich Spring Arts Festival',date:'2027-05-16',state:'CT',city:'Greenwich, CT',type:'Festival',attendance:8000},
+  {id:'sp14',name:'Red Bank NJ Farmers Market Opener',date:'2027-04-19',state:'NJ',city:'Red Bank, NJ',type:'Farmers Market',attendance:900},
+  {id:'sp15',name:'Norwood Mother\'s Day 5K Run',date:'2027-05-10',state:'MA',city:'Norwood, MA',type:'Road Race',attendance:700},
+  {id:'sp16',name:'Taunton Kids Reading Fair',date:'2027-03-22',state:'MA',city:'Taunton, MA',type:'Library',attendance:150},
+  {id:'sp17',name:'White Plains Spring Community Day',date:'2027-05-03',state:'NY',city:'White Plains, NY',type:'Community',attendance:1200},
+  {id:'sp18',name:'Newport Spring Garden Tour',date:'2027-05-17',state:'RI',city:'Newport, RI',type:'Community',attendance:2500},
+  {id:'sp19',name:'Portsmouth NH Strawbery Banke Spring Opening',date:'2027-05-24',state:'NH',city:'Portsmouth, NH',type:'Community',attendance:3000},
+  {id:'sp20',name:'Abington School Spring Field Day',date:'2027-05-30',state:'MA',city:'Abington, MA',type:'School',attendance:450},
+  {id:'su1',name:'Boston Harborfest',date:'2027-07-04',state:'MA',city:'Boston, MA',type:'Festival',attendance:500000},
+  {id:'su2',name:'Stoughton Town Common Concert',date:'2027-07-10',state:'MA',city:'Stoughton, MA',type:'Community',attendance:600},
+  {id:'su3',name:'Easton Road Race 5K',date:'2027-07-20',state:'MA',city:'Easton, MA',type:'Road Race',attendance:1500},
+  {id:'su4',name:'Taunton Green Summer Block Party',date:'2027-07-18',state:'MA',city:'Taunton, MA',type:'Block Party',attendance:1200},
+  {id:'su5',name:'Braintree Family Fun Day',date:'2027-07-25',state:'MA',city:'Braintree, MA',type:'Community',attendance:900},
+  {id:'su6',name:'Jamaica Plain Farmers Market',date:'2027-07-05',state:'MA',city:'Jamaica Plain, MA',type:'Farmers Market',attendance:800},
+  {id:'su7',name:'Falmouth Road Race',date:'2027-08-15',state:'MA',city:'Falmouth, MA',type:'Road Race',attendance:12000},
+  {id:'su8',name:'Randolph Cultural Festival',date:'2027-07-19',state:'MA',city:'Randolph, MA',type:'Festival',attendance:2000},
+  {id:'su9',name:'Dedham Library Summer Reading Kickoff',date:'2027-07-08',state:'MA',city:'Dedham, MA',type:'Library',attendance:100},
+  {id:'su10',name:'Weymouth Splash Pad Community Day',date:'2027-07-12',state:'MA',city:'Weymouth, MA',type:'Park Event',attendance:500},
+  {id:'su11',name:'Norwood Night Out Block Party',date:'2027-08-05',state:'MA',city:'Norwood, MA',type:'Block Party',attendance:700},
+  {id:'su12',name:'Milton Summer Youth Sports League',date:'2027-07-15',state:'MA',city:'Milton, MA',type:'Sports',attendance:600},
+  {id:'su13',name:'Holbrook Park & Rec Kids Day',date:'2027-07-22',state:'MA',city:'Holbrook, MA',type:'Park Event',attendance:250},
+  {id:'su14',name:'Mystic Outdoor Arts Festival',date:'2027-08-09',state:'CT',city:'Mystic, CT',type:'Festival',attendance:40000},
+  {id:'su15',name:'Stamford Downtown Summer Fest',date:'2027-08-01',state:'CT',city:'Stamford, CT',type:'Festival',attendance:20000},
+  {id:'su16',name:'Hartford Riverfront Splash',date:'2027-07-26',state:'CT',city:'Hartford, CT',type:'Park Event',attendance:3500},
+  {id:'su17',name:'Norwalk Oyster Festival',date:'2027-08-14',state:'CT',city:'Norwalk, CT',type:'Food & Drink',attendance:50000},
+  {id:'su18',name:'Glastonbury Kids Fun Run',date:'2027-08-02',state:'CT',city:'Glastonbury, CT',type:'Road Race',attendance:600},
+  {id:'su19',name:'Milford CT Summer Youth Day',date:'2027-07-22',state:'CT',city:'Milford, CT',type:'Community',attendance:400},
+  {id:'su20',name:'Newport Folk Festival',date:'2027-07-25',state:'RI',city:'Newport, RI',type:'Festival',attendance:10000},
+  {id:'su21',name:'Providence WaterFire',date:'2027-07-19',state:'RI',city:'Providence, RI',type:'Community',attendance:15000},
+  {id:'su22',name:'Narragansett Town Beach Day',date:'2027-07-11',state:'RI',city:'Narragansett, RI',type:'Park Event',attendance:2000},
+  {id:'su23',name:'Pawtucket Summer Block Party',date:'2027-08-01',state:'RI',city:'Pawtucket, RI',type:'Block Party',attendance:800},
+  {id:'su24',name:'Jersey Shore Summer Kickoff',date:'2027-06-26',state:'NJ',city:'Asbury Park, NJ',type:'Community',attendance:15000},
+  {id:'su25',name:'Hoboken Waterfront Festival',date:'2027-08-07',state:'NJ',city:'Hoboken, NJ',type:'Festival',attendance:8000},
+  {id:'su26',name:'Morristown Corporate Block Party',date:'2027-07-17',state:'NJ',city:'Morristown, NJ',type:'Corporate',attendance:3000},
+  {id:'su27',name:'Summit Corporate Summer Picnic',date:'2027-08-14',state:'NJ',city:'Summit, NJ',type:'Corporate',attendance:1500},
+  {id:'su28',name:'Maplewood Town Pool Party',date:'2027-07-26',state:'NJ',city:'Maplewood, NJ',type:'Park Event',attendance:400},
+  {id:'su29',name:'Princeton Youth Fun Run',date:'2027-07-19',state:'NJ',city:'Princeton, NJ',type:'Road Race',attendance:500},
+  {id:'su30',name:'Yonkers Waterfront Block Party',date:'2027-07-24',state:'NY',city:'Yonkers, NY',type:'Block Party',attendance:2000},
+  {id:'su31',name:'White Plains Farmers Market',date:'2027-07-10',state:'NY',city:'White Plains, NY',type:'Farmers Market',attendance:900},
+  {id:'su32',name:'Rockland County School Field Day',date:'2027-06-27',state:'NY',city:'Nyack, NY',type:'School',attendance:600},
+  {id:'su33',name:'NH Motor Speedway Community Day',date:'2027-07-26',state:'NH',city:'Loudon, NH',type:'Sports',attendance:25000},
+  {id:'su34',name:'Nashua Block Party on Main',date:'2027-08-01',state:'NH',city:'Nashua, NH',type:'Block Party',attendance:1000},
+  {id:'su35',name:'Burlington VT Farmers Market',date:'2027-07-10',state:'VT',city:'Burlington, VT',type:'Farmers Market',attendance:3000},
+  {id:'su36',name:'Stowe Summer Festival',date:'2027-07-19',state:'VT',city:'Stowe, VT',type:'Festival',attendance:5000},
+  {id:'su37',name:'Montpelier Kids in the Park',date:'2027-07-11',state:'VT',city:'Montpelier, VT',type:'Park Event',attendance:300},
+  {id:'su38',name:'Portland Food & Wine Festival',date:'2027-08-01',state:'ME',city:'Portland, ME',type:'Food & Drink',attendance:18000},
+  {id:'su39',name:'Bangor Waterfront Concert',date:'2027-07-18',state:'ME',city:'Bangor, ME',type:'Community',attendance:4000},
+  {id:'su40',name:'Kennebunkport Farmers Market',date:'2027-07-10',state:'ME',city:'Kennebunkport, ME',type:'Farmers Market',attendance:600},
+  {id:'fa1',name:'Topsfield Fair',date:'2027-10-03',state:'MA',city:'Topsfield, MA',type:'Festival',attendance:300000},
+  {id:'fa2',name:'Stoughton Harvest Festival',date:'2027-10-11',state:'MA',city:'Stoughton, MA',type:'Festival',attendance:2000},
+  {id:'fa3',name:'Easton Apple Fest',date:'2027-09-20',state:'MA',city:'Easton, MA',type:'Community',attendance:1500},
+  {id:'fa4',name:'Canton Fall Road Race',date:'2027-09-13',state:'MA',city:'Canton, MA',type:'Road Race',attendance:800},
+  {id:'fa5',name:'Abington PTA Fall Carnival',date:'2027-10-04',state:'MA',city:'Abington, MA',type:'School',attendance:500},
+  {id:'fa6',name:'Jamaica Plain Fall Farmers Market',date:'2027-09-06',state:'MA',city:'Jamaica Plain, MA',type:'Farmers Market',attendance:700},
+  {id:'fa7',name:'Quincy Fall Family Day',date:'2027-09-27',state:'MA',city:'Quincy, MA',type:'Community',attendance:1000},
+  {id:'fa8',name:'Milton Library Autumn Story Series',date:'2027-10-18',state:'MA',city:'Milton, MA',type:'Library',attendance:90},
+  {id:'fa9',name:'Norwood Oktoberfest',date:'2027-10-04',state:'MA',city:'Norwood, MA',type:'Festival',attendance:2500},
+  {id:'fa10',name:'Rockland Halloween Block Party',date:'2027-10-25',state:'MA',city:'Rockland, MA',type:'Block Party',attendance:800},
+  {id:'fa11',name:'Mystic Pumpkin Festival',date:'2027-10-18',state:'CT',city:'Mystic, CT',type:'Festival',attendance:10000},
+  {id:'fa12',name:'Glastonbury Apple Harvest Festival',date:'2027-10-04',state:'CT',city:'Glastonbury, CT',type:'Festival',attendance:15000},
+  {id:'fa13',name:'New Haven Fall Arts & Crafts Fair',date:'2027-09-27',state:'CT',city:'New Haven, CT',type:'Festival',attendance:5000},
+  {id:'fa14',name:'Providence Fall Farmers Market',date:'2027-09-13',state:'RI',city:'Providence, RI',type:'Farmers Market',attendance:1500},
+  {id:'fa15',name:'Newport Fall Weekend',date:'2027-10-11',state:'RI',city:'Newport, RI',type:'Festival',attendance:12000},
+  {id:'fa16',name:'Morristown Fall Festival',date:'2027-10-04',state:'NJ',city:'Morristown, NJ',type:'Festival',attendance:6000},
+  {id:'fa17',name:'Red Bank Halloween Stroll',date:'2027-10-25',state:'NJ',city:'Red Bank, NJ',type:'Community',attendance:3000},
+  {id:'fa18',name:'Princeton Fall Run',date:'2027-09-20',state:'NJ',city:'Princeton, NJ',type:'Road Race',attendance:600},
+  {id:'fa19',name:'White Plains Fall Festival',date:'2027-09-27',state:'NY',city:'White Plains, NY',type:'Festival',attendance:4000},
+  {id:'fa20',name:'Poughkeepsie Fall Family Fair',date:'2027-10-11',state:'NY',city:'Poughkeepsie, NY',type:'Community',attendance:2500},
+  {id:'fa21',name:'Concord NH Fall Foliage Road Race',date:'2027-10-04',state:'NH',city:'Concord, NH',type:'Road Race',attendance:700},
+  {id:'fa22',name:'Burlington VT Fall Harvest Fest',date:'2027-09-20',state:'VT',city:'Burlington, VT',type:'Festival',attendance:8000},
+  {id:'fa23',name:'Portland ME Fall Farmers Market',date:'2027-10-04',state:'ME',city:'Portland, ME',type:'Farmers Market',attendance:1200},
+  {id:'fa24',name:'Bangor ME Harvest Festival',date:'2027-09-27',state:'ME',city:'Bangor, ME',type:'Festival',attendance:3000},
+  {id:'fa25',name:'Bar Harbor ME Octoberfest',date:'2027-10-11',state:'ME',city:'Bar Harbor, ME',type:'Food & Drink',attendance:2000},
+  {id:'wi1',name:'Boston Winter Holiday Market',date:'2027-12-06',state:'MA',city:'Boston, MA',type:'Winter Market',attendance:25000},
+  {id:'wi2',name:'Stoughton Tree Lighting',date:'2027-12-05',state:'MA',city:'Stoughton, MA',type:'Holiday',attendance:500},
+  {id:'wi3',name:'Easton Holiday Parade',date:'2027-12-06',state:'MA',city:'Easton, MA',type:'Holiday',attendance:1500},
+  {id:'wi4',name:'Taunton Christmas Parade',date:'2027-12-13',state:'MA',city:'Taunton, MA',type:'Holiday',attendance:8000},
+  {id:'wi5',name:'Canton Library Winter Story Time',date:'2027-01-17',state:'MA',city:'Canton, MA',type:'Library',attendance:80},
+  {id:'wi6',name:'Quincy New Year\'s Eve Celebration',date:'2027-12-31',state:'MA',city:'Quincy, MA',type:'Community',attendance:3000},
+  {id:'wi7',name:'Dedham Valentine\'s Day Market',date:'2027-02-13',state:'MA',city:'Dedham, MA',type:'Community',attendance:400},
+  {id:'wi8',name:'Norwood MLK Day Community Event',date:'2027-01-19',state:'MA',city:'Norwood, MA',type:'Community',attendance:300},
+  {id:'wi9',name:'Braintree Winter Reading Program',date:'2027-02-07',state:'MA',city:'Braintree, MA',type:'Library',attendance:120},
+  {id:'wi10',name:'Westport CT Holiday Market',date:'2027-12-06',state:'CT',city:'Westport, CT',type:'Winter Market',attendance:3000},
+  {id:'wi11',name:'Stamford CT Tree Lighting',date:'2027-12-05',state:'CT',city:'Stamford, CT',type:'Holiday',attendance:5000},
+  {id:'wi12',name:'New Haven CT Winter Arts Fair',date:'2027-12-13',state:'CT',city:'New Haven, CT',type:'Festival',attendance:4000},
+  {id:'wi13',name:'Hartford MLK Day March',date:'2027-01-19',state:'CT',city:'Hartford, CT',type:'Community',attendance:1500},
+  {id:'wi14',name:'Providence RI Holiday Market',date:'2027-12-06',state:'RI',city:'Providence, RI',type:'Winter Market',attendance:6000},
+  {id:'wi15',name:'Newport RI Winter Festival',date:'2027-01-17',state:'RI',city:'Newport, RI',type:'Festival',attendance:4000},
+  {id:'wi16',name:'Hoboken NJ Holiday Market',date:'2027-12-06',state:'NJ',city:'Hoboken, NJ',type:'Winter Market',attendance:5000},
+  {id:'wi17',name:'Morristown NJ Tree Lighting',date:'2027-12-05',state:'NJ',city:'Morristown, NJ',type:'Holiday',attendance:2000},
+  {id:'wi18',name:'Montclair NJ MLK Celebration',date:'2027-01-19',state:'NJ',city:'Montclair, NJ',type:'Community',attendance:600},
+  {id:'wi19',name:'White Plains NY Winter Market',date:'2027-12-06',state:'NY',city:'White Plains, NY',type:'Winter Market',attendance:4000},
+  {id:'wi20',name:'Tarrytown NY Holiday Stroll',date:'2027-12-13',state:'NY',city:'Tarrytown, NY',type:'Holiday',attendance:2000},
+  {id:'wi21',name:'Concord NH Winter Festival',date:'2027-01-24',state:'NH',city:'Concord, NH',type:'Festival',attendance:3000},
+  {id:'wi22',name:'Burlington VT Ice & Snow Festival',date:'2027-02-07',state:'VT',city:'Burlington, VT',type:'Festival',attendance:8000},
+  {id:'wi23',name:'Portland ME Holiday Market',date:'2027-12-06',state:'ME',city:'Portland, ME',type:'Winter Market',attendance:5000},
+  {id:'wi24',name:'Bangor ME Winter Carnival',date:'2027-02-14',state:'ME',city:'Bangor, ME',type:'Festival',attendance:2500},
+];
+let currentProfile=null,aiEvents=[],currentEvent=null;
+function season(d){const m=parseInt(d.slice(5,7));if(m>=3&&m<=5)return'spring';if(m>=6&&m<=8)return'summer';if(m>=9&&m<=11)return'fall';return'winter';}
+const SEASON_LABEL={spring:'🌸 Spring',summer:'☀️ Summer',fall:'🍂 Fall',winter:'❄️ Winter'};
+function fmtAtt(n){if(!n)return'?';if(n>=100000)return Math.round(n/1000)+'k+';if(n>=1000)return(Math.round(n/100)/10)+'k+';return n+'';}
+function fmtDate(d){return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+function fmtDateLong(d){return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+async function apiGet(url){const r=await fetch(url);return r.json();}
+async function apiPost(url,data){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});return r.json();}
+async function apiPatch(url,data){const r=await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});return r.json();}
+async function apiDelete(url){const r=await fetch(url,{method:'DELETE'});return r.json();}
+let logsCache={};
+async function getLogs(id){if(!logsCache[id]){logsCache[id]=await apiGet('/api/logs/'+id);}return logsCache[id];}
+function invalidateLogsCache(id){delete logsCache[id];}
+function getBlockedDates(logs){return logs.filter(l=>l.status==='Reached Out'||l.status==='Confirmed').map(l=>l.date);}
+function initProfiles(){const nav=document.getElementById('profileNav');nav.innerHTML='';INTERNS.forEach(intern=>{const btn=document.createElement('button');btn.className='profile-btn'+(currentProfile&&currentProfile.id===intern.id?' active':'');btn.textContent=intern.name+' · '+intern.territory;btn.onclick=()=>selectProfile(intern);nav.appendChild(btn);});}
+async function selectProfile(intern){currentProfile=intern;initProfiles();document.getElementById('eventsTitle').innerHTML='<i class="ti ti-calendar-event"></i> Events in '+intern.territory;document.getElementById('logTitle').innerHTML='<i class="ti ti-list-check"></i> '+intern.name+"'s outreach log";document.getElementById('filterState').value=intern.states[0]||'';try{const saved=await apiGet('/api/ai-events/'+intern.id);aiEvents=saved;}catch(e){aiEvents=[];}applyFilters();if(document.getElementById('view-log').style.display!=='none')renderLog();}
+async function applyFilters(){const stateVal=document.getElementById('filterState').value;const typeVal=document.getElementById('filterType').value;const seasonVal=document.getElementById('filterSeason').value;const all=[...BASE_EVENTS,...aiEvents];let events=all;if(currentProfile&&!stateVal){events=events.filter(e=>currentProfile.states.includes(e.state));}else if(stateVal){events=events.filter(e=>e.state===stateVal);}if(typeVal)events=events.filter(e=>e.type===typeVal);if(seasonVal)events=events.filter(e=>season(e.date)===seasonVal);events.sort((a,b)=>a.date.localeCompare(b.date));const logs=currentProfile?await getLogs(currentProfile.id):[];renderEvents(events,logs);}
+function renderEvents(events,logs){const grid=document.getElementById('eventsGrid');const countEl=document.getElementById('eventCount');const blocked=getBlockedDates(logs);if(!events.length){grid.innerHTML='<div class="empty-state"><i class="ti ti-calendar-off"></i>No events match your filters.</div>';countEl.textContent='';return;}const visible=events.filter(e=>!blocked.includes(e.date));countEl.textContent=visible.length+' event'+(visible.length!==1?'s':'')+(currentProfile?' in '+currentProfile.territory:'');let html='',lastSeason='';events.forEach(e=>{const s=season(e.date);if(s!==lastSeason){html+=`<div class="season-divider"><hr/><span>${SEASON_LABEL[s]}</span><hr/></div>`;lastSeason=s;}const isBlocked=blocked.includes(e.date);const conflict=!isBlocked&&logs.find(l=>l.date===e.date&&(l.status==='Reached Out'||l.status==='Confirmed'));const isAI=String(e.id).startsWith('ai_');const badge=isBlocked?'<span class="card-badge b-blocked">Booked</span>':conflict?'<span class="card-badge b-warned">Conflict</span>':'<span class="card-badge b-open">Open</span>';const ej=encodeURIComponent(JSON.stringify(e));html+=`<div class="event-card${isBlocked?' blocked':conflict?' warned':''}" onclick="${isBlocked?'':('openModal(decodeURIComponent(\''+ej+'\'))')}"><div class="card-header ch-${s}"><div class="card-season-type"><span class="season-pill sp-${s}">${SEASON_LABEL[s]}</span><span class="card-type-label">${e.type}${isAI?'<span class="ai-pill">✨ AI</span>':''}</span></div><div class="card-name">${e.name}</div>${badge}</div><div class="card-body"><div class="card-meta"><div class="meta-row"><i class="ti ti-calendar"></i>${fmtDate(e.date)}</div><div class="meta-row"><i class="ti ti-map-pin"></i>${e.city}</div></div><div class="card-foot"><div><div class="att-num">${fmtAtt(e.attendance)}</div><div class="att-label">est. attendees</div></div>${!isBlocked?`<button class="reach-btn" onclick="event.stopPropagation();openModal(decodeURIComponent('${ej}'))">View & reach out</button>`:''}</div></div></div>`;});grid.innerHTML=html;}
+async function fetchAIEvents(){const btn=document.getElementById('aiBtn');btn.innerHTML='<span class="spinner"></span> Searching...';btn.disabled=true;const territory=currentProfile?currentProfile.territory+' ('+currentProfile.states.join(',')+')'  :'all of the Northeast US';const seasonVal=document.getElementById('filterSeason').value;const seasonHint=seasonVal?'Focus on '+seasonVal+' events.':'Include events across all seasons.';try{const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,tools:[{type:'web_search_20250305',name:'web_search'}],system:'You find year-round local community events in the Northeast US for a frozen pop brand. Think SMALL and LOCAL — library read-alongs, town tree lightings, holiday markets, school carnivals, block parties, youth sports, park events, farmers markets, local 5Ks, PTA events, corporate picnics, town fairs, winter festivals. Return ONLY a raw JSON array, no markdown. Each object: {name,date(YYYY-MM-DD),state(2-letter),city(City ST),type(Festival|Road Race|Corporate|School|Farmers Market|Community|Sports|Library|Food & Drink|Block Party|Park Event|Holiday|Winter Market),attendance(integer)}. Return 15 events.',messages:[{role:'user',content:'Find 15 year-round community events in '+territory+'. '+seasonHint+' JSON array only.'}]})});const data=await resp.json();const texts=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');const s=texts.indexOf('['),en=texts.lastIndexOf(']');if(s>=0&&en>s){const parsed=JSON.parse(texts.slice(s,en+1));if(parsed.length&&currentProfile){const newEvents=parsed.map((e,i)=>({...e,id:'ai_'+Date.now()+'_'+i,city:e.city||e.state,profile_id:currentProfile.id}));await apiPost('/api/ai-events',newEvents);aiEvents=[...aiEvents,...newEvents];applyFilters();showToast('Found '+parsed.length+' new events!');btn.innerHTML='<i class="ti ti-sparkles"></i> Find more with AI';btn.disabled=false;return;}}}catch(e){}showToast('AI search unavailable — try again shortly.');btn.innerHTML='<i class="ti ti-sparkles"></i> Find more with AI';btn.disabled=false;}
+function openModal(jsonStr){if(!currentProfile){showToast('Select your profile first!');return;}const e=typeof jsonStr==='string'?JSON.parse(jsonStr):jsonStr;currentEvent=e;document.getElementById('modalTitle').textContent=e.name;document.getElementById('emailDraft').textContent=`Hi there,\n\nMy name is ${currentProfile.name}, and I'm with JonnyPops — a better-for-you frozen pop brand on a mission to spread kindness. We make our pops with simple, clean ingredients and no artificial dyes, and a kind deed is printed on every single stick.\n\nI came across ${e.name} on ${fmtDateLong(e.date)} and thought it would be a wonderful fit for a JonnyPops sampling experience. We'd love to provide complimentary pops for your attendees — no cost to you, just delicious pops and a little extra kindness for your community!\n\nOver 1 billion kind deeds have been shared through JonnyPops sticks, and we'd love for ${e.name} to be part of that story.\n\nWould you be open to a quick conversation? I'd love to share more about what we have in mind!\n\nWarmly,\n${currentProfile.name}\nJonnyPops — Northeast Territory`;document.getElementById('f-name').value=e.name;document.getElementById('f-date').value=e.date;document.getElementById('f-location').value=e.city;document.getElementById('f-contact').value=e.contact||'';document.getElementById('f-status').value='Reached Out';document.getElementById('f-pops').value='';document.getElementById('f-notes').value='';document.getElementById('eventModal').classList.add('open');}
+function closeModal(){document.getElementById('eventModal').classList.remove('open');}
+function copyEmail(){const t=document.getElementById('emailDraft').textContent;navigator.clipboard.writeText(t).then(()=>showToast('Email copied!')).catch(()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');document.body.removeChild(a);showToast('Email copied!');});}
+async function submitLog(){if(!currentProfile){showToast('Select your profile first!');return;}const name=document.getElementById('f-name').value.trim();const date=document.getElementById('f-date').value;if(!name||!date){showToast('Event name and date are required.');return;}const entry={id:'log_'+Date.now(),profile_id:currentProfile.id,name,date,location:document.getElementById('f-location').value.trim(),contact:document.getElementById('f-contact').value.trim(),status:document.getElementById('f-status').value,pops:document.getElementById('f-pops').value,notes:document.getElementById('f-notes').value.trim()};await apiPost('/api/logs',entry);invalidateLogsCache(currentProfile.id);closeModal();showToast('Logged! That date is now blocked on your calendar.');applyFilters();if(document.getElementById('view-log').style.display!=='none')renderLog();}
+async function renderLog(){if(!currentProfile)return;invalidateLogsCache(currentProfile.id);const fresh=await getLogs(currentProfile.id);const tbody=document.getElementById('logBody');const empty=document.getElementById('logEmpty');if(!fresh.length){tbody.innerHTML='';empty.style.display='block';return;}empty.style.display='none';tbody.innerHTML=fresh.map(l=>`<tr><td style="font-weight:600;max-width:150px">${l.name}</td><td style="white-space:nowrap">${fmtDate(l.date)}</td><td>${l.location||'—'}</td><td style="max-width:130px;word-break:break-all;font-size:12px">${l.contact||'—'}</td><td><select class="status-sel" onchange="updateStatus('${l.id}',this.value)"><option ${l.status==='Reached Out'?'selected':''}>Reached Out</option><option ${l.status==='Confirmed'?'selected':''}>Confirmed</option><option ${l.status==='Declined'?'selected':''}>Declined</option></select></td><td>${l.pops||'—'}</td><td style="max-width:120px;font-size:12px;color:var(--text-muted)">${l.notes||'—'}</td><td><button class="del-btn" onclick="deleteLog('${l.id}')" aria-label="Remove"><i class="ti ti-trash"></i></button></td></tr>`).join('');}
+async function updateStatus(logId,newStatus){if(!currentProfile)return;await apiPatch('/api/logs/'+logId+'/status',{status:newStatus});invalidateLogsCache(currentProfile.id);applyFilters();showToast('Status updated to '+newStatus);}
+async function deleteLog(logId){if(!currentProfile)return;await apiDelete('/api/logs/'+logId);invalidateLogsCache(currentProfile.id);renderLog();applyFilters();showToast('Entry removed.');}
+function switchTab(tab){document.getElementById('view-events').style.display=tab==='events'?'':'none';document.getElementById('view-log').style.display=tab==='log'?'':'none';document.getElementById('tab-events').className='tab'+(tab==='events'?' active':'');document.getElementById('tab-log').className='tab'+(tab==='log'?' active':'');if(tab==='log')renderLog();}
+document.getElementById('eventModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+initProfiles();
+applyFilters();
+</script>
+</body>
+</html>
